@@ -80,14 +80,14 @@ namespace Tetris
 		{
 			int[][] movedMino = new int[][]
 			{
-				new int[]{},
+				new int[]{mino[0][0]},
 				new int[]{0,0},
 				new int[]{0,0},
 				new int[]{0,0},
 				new int[]{0,0}
 			};
-			for (int i = 0; i < mino.Length; i++)
-				movedMino[i] = mino[i];
+			for (int i = 1; i < mino.Length; i++)
+				movedMino[i] = new int[] { mino[i][0], mino[i][1] };
 			switch (moveDirection) {
 				case 1:
 					movedMino[mino.Length - 1][0] += 1;
@@ -104,24 +104,6 @@ namespace Tetris
 		
 
 
-		//回転や移動のときミノの更新.新たな原点を返す。(y,x)
-		public int[] UpdateField (int[,] field,int[][] beforeMino,int[][]afterMino,int originY,int originX)
-		{
-			//削除
-			for (int i = 1; i < beforeMino.Length; i++)
-				field[originY + beforeMino[i][1], originX + beforeMino[i][0]] = 0;
-			//更新
-			//原点の更新
-			originY += afterMino[afterMino.Length - 1][1];
-			originX += afterMino[afterMino.Length - 1][0];
-			field[originY, originX] = 1;
-			for (int i = 1; i < afterMino.Length - 1; i++)
-				field[originY + afterMino[i][1], originX + afterMino[i][0]] = 1;
-
-				int[] nextOrigin = new int[] { originY ,originX };
-			return nextOrigin;
-			
-		}
 		//1か0を返す。
 		public int Sin(int angle)
 		{
