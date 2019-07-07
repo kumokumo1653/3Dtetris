@@ -12,7 +12,7 @@ namespace Tetris
 		private int type;
 		public TetrisMino(int type,int height, int width)
 		{
-			int[][] Mino = Blocks[type];
+			
 			this.height = height;
 			this.width = width;
 			this.type = type;
@@ -22,7 +22,19 @@ namespace Tetris
 		//ミノ生成関数
 		public int[][] GenerateMino(int[,] field)
 		{
-			int[][] mino =Blocks[type];
+			int[][] mino = new int[][]
+			{
+				new int[]{Blocks[type][0][0]},
+				new int[]{0,0},
+				new int[]{0,0},
+				new int[]{0,0},
+				new int[]{0,0}
+			};
+			for (int i = 1; i < Blocks[type].Length; i++)
+			{
+				mino[i][0] = Blocks[type][i][0];
+				mino[i][1] = Blocks[type][i][1];
+			}
 
 		
 			//出現位置にミノを出現
@@ -45,28 +57,37 @@ namespace Tetris
 
 
 		//roteteNum回、回転したブロックの配列を返す。
-		public int[][] RotateMino(int[][] mino, int rotateNum)
+		public int[][] RotateMino(int rotateNum)
 		{
 			int[][] rotatedMino = new int[][]
 			{
-				new int[]{0},
+				new int[]{Blocks[type][0][0]},
 				new int[]{0,0},
 				new int[]{0,0},
 				new int[]{0,0},
 				new int[]{0,0}
 			};
 			//回転回数の正規化
-			int rotationTimes = rotateNum % mino[0][0];
+			int rotationTimes = rotateNum % Blocks[type][0][0];
 			//元の形に戻ったら(O型は常にこれ)
 			if (rotationTimes == 0)
-				return Blocks[type];
-			int rotationAngle = rotationTimes * 90;
-			for (int i = 1; i < mino.Length; i++)
+			{
+				Debug.Log("asdfa");
+				for (int i = 1; i < Blocks[type].Length; i++)
+				{
+					rotatedMino[i][0] = Blocks[type][i][0];
+					rotatedMino[i][1] = Blocks[type][i][1];
+				}
+				return rotatedMino;
+			}
+
+				int rotationAngle = rotationTimes * 90;
+			for (int i = 1; i < Blocks[type].Length; i++)
 			{
 				//y方向
-				rotatedMino[i][1] = mino[i][0] * Sin(rotationAngle) + mino[i][1] * Cos(rotationAngle);
+				rotatedMino[i][1] = Blocks[type][i][0] * Sin(rotationAngle) + Blocks[type][i][1] * Cos(rotationAngle);
 				//ｘ方向
-				rotatedMino[i][0] = mino[i][0] * Cos(rotationAngle) - mino[i][1] * Sin(rotationAngle);
+				rotatedMino[i][0] = Blocks[type][i][0] * Cos(rotationAngle) - Blocks[type][i][1] * Sin(rotationAngle);
 				
 			}
 			return rotatedMino;
