@@ -57,7 +57,7 @@ namespace Tetris
 
 
 		//roteteNum回、回転したブロックの配列を返す。
-		public int[][] RotateMino(int rotateNum)
+		public int[][] RotateMino(int rotateNum, GameObject thisMinoObject)
 		{
 			int[][] rotatedMino = new int[][]
 			{
@@ -72,12 +72,12 @@ namespace Tetris
 			//元の形に戻ったら(O型は常にこれ)
 			if (rotationTimes == 0)
 			{
-				Debug.Log("asdfa");
 				for (int i = 1; i < Blocks[type].Length; i++)
 				{
 					rotatedMino[i][0] = Blocks[type][i][0];
 					rotatedMino[i][1] = Blocks[type][i][1];
 				}
+				thisMinoObject.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
 				return rotatedMino;
 			}
 
@@ -90,6 +90,7 @@ namespace Tetris
 				rotatedMino[i][0] = Blocks[type][i][0] * Cos(rotationAngle) - Blocks[type][i][1] * Sin(rotationAngle);
 				
 			}
+			thisMinoObject.transform.rotation = Quaternion.Euler(new Vector3(0, 0, rotationAngle));
 			return rotatedMino;
 		}
 
@@ -97,7 +98,7 @@ namespace Tetris
 		//1…右
 		//2…左
 		//3…下
-		public int[][] MoveMino(int[][] mino, int moveDirection)
+		public int[][] MoveMino(int[][] mino, int moveDirection,GameObject thisMinoObject)
 		{
 			int[][] movedMino = new int[][]
 			{
@@ -112,13 +113,13 @@ namespace Tetris
 			switch (moveDirection) {
 				case 1:
 					movedMino[mino.Length - 1][0] += 1;
-					break;
+ 					break;
 				case 2:
 					movedMino[mino.Length - 1][0] -= 1;
-					break;
+ 					break;
 				case 3:
 					movedMino[mino.Length - 1][1] -= 1;
-					break;
+ 					break;
 			}
 			return movedMino;
 		}

@@ -8,8 +8,10 @@ namespace Tetris
 	public class Field : MonoBehaviour
 	{
 		//盤面は10×5だたし、11,12段目からミノは出現
-		const int width = 7;
-		const int height = 10;
+		const int width = 10;
+		const int height = 15;
+		//ミノのプレハブの名前(string)を配列に.Blockクラスの配列と同じ順番にする。
+		public string[] minoPrefabs;
 		[HideInInspector]
 		public int[,] field = new int[height + 5, width + 2];
 		private TetrisMino tetrisMino;
@@ -20,6 +22,8 @@ namespace Tetris
 		private int rotatedTimes;
 		private int[] nextOrigin;
 		private List<int> minoNums;
+		private GameObject thisMinoObject;//その時操作できるオブジェクトを格納
+		private GameObject[] lineObjects;//行単位で操作するときの親オブジェクトの配列
 		// Use this for initialization
 		void Start()
 		{
@@ -31,24 +35,15 @@ namespace Tetris
 			minoNums.RemoveAt(random);
 			originY = nextOrigin[0];
 			originX = nextOrigin[1];
-			/*int[][] rotateMino = tetrisMino.RotateMino(1);
-			nextOrigin  = UpdateField(field, thisMino, rotateMino, originY, originX, true);
-			originY = nextOrigin[0];
-			originX = nextOrigin[1];
-			DebugArray(field);
-			for (int i = 1; i < thisMino.Length; i++)
+			lineObjects = new GameObject[height+4];
+			//行オブジェクトの生成
+			for (int i = 1; i < lineObjects.Length; i++)
 			{
-				thisMino[i][0] = rotateMino[i][0];
-				thisMino[i][1] = rotateMino[i][1];
+				GameObject lineObject = new GameObject();
+				lineObject.transform.position = new Vector3(0f, i, 0f);
+				lineObject.name = "line" + i.ToString();
+				lineObjects[i] = lineObject;
 			}
-			rotateMino = tetrisMino.RotateMino(2);
-			for (int i = 1; i < rotateMino.Length; i++)
-				Debug.Log(rotateMino[i][1] + "," + rotateMino[i][0]);
-			nextOrigin = UpdateField(field, thisMino, rotateMino, originY, originX, true);
-			originY = nextOrigin[0];
-			originX = nextOrigin[1];
-			DebugArray(field);
-			*/
 			
 		}
 
@@ -85,6 +80,8 @@ namespace Tetris
 			originY = height + 1;
 			originX = width / 2;
 			rotatedTimes = 0;
+			thisMinoObject = (GameObject)Resources.Load(minoPrefabs[type]);
+			thisMinoObject = Instantiate(thisMinoObject, new Vector3(originX, originY, 0.0f), Quaternion.identity);
 			return new int[] { originY, originX };
 		}
 
@@ -95,7 +92,7 @@ namespace Tetris
 			{
 				if (player.inputNum < 5)
 				{
-					int[][] movedMino = tetrisMino.MoveMino(changeMino, player.inputNum);
+					int[][] movedMino = tetrisMino.MoveMino(changeMino, player.inputNum,thisMinoObject);
 
 					int[] nextOrigin = UpdateField(field, changeMino, movedMino, originY, originX, false);
 					if (nextOrigin[0] == -1 && nextOrigin[1] == -1)
@@ -110,10 +107,38 @@ namespace Tetris
 						nextOrigin = UpdateField(field, changeMino, movedMino, originY, originX, true);
 						originY = nextOrigin[0];
 						originX = nextOrigin[1];
+						//実際のミノの移動
+						switch (player.inputNum)
+						{
+							case 1:
+								thisMinoObject.transform.position += Vector3.right;
+								break;
+							case 2:
+								thisMinoObject.transform.position += Vector3.left;
+								break;
+							case 3:
+								thisMinoObject.transform.position += Vector3.down;
+								break;
+						}
 					}
 					DebugArray(field);
 					if (JudgeFallen(field, movedMino, originY, originX))
+					{
+						//ミノの親オブジェクトを削除
+						//子オブジェクトを配列に格納
+						//行ごとの親オブジェクトにいれる。
+						GameObject[] childObjects = new GameObject[thisMinoObject.transform.childCount];
+						for(int i = 0;i < thisMinoObject.transform.childCount;i++)
+							childObjects[i] = thisMinoObject.transform.GetChild(i).gameObject;
+						thisMinoObject.transform.DetachChildren();
+						Destroy(thisMinoObject);
+						foreach(GameObject childObject in childObjects)
+						{
+							childObject.transform.parent = lineObjects[(int)Math.Round(childObject.transform.position.y)].transform;
+						}
+
 						return new int[] { -1, -1 };
+					}
 					else
 						return new int[] { originY, originX };
 
@@ -121,23 +146,25 @@ namespace Tetris
 				else
 				{
 					rotatedTimes++;
-					int[][] rotatedMino = tetrisMino.RotateMino(rotatedTimes);
+					int[][] rotatedMino = tetrisMino.RotateMino(rotatedTimes, thisMinoObject);
 					int[] nextOrigin = UpdateField(field, changeMino, rotatedMino, originY, originX, false);
 					if (nextOrigin[0] == -1 && nextOrigin[1] == -1)
 					{
 						Debug.Log("そこには動かせません");
-						rotatedMino = tetrisMino.RotateMino(rotatedTimes - 1);
+						rotatedMino = tetrisMino.RotateMino(rotatedTimes - 1,thisMinoObject);
 					}
 					else
 					{
 						nextOrigin = UpdateField(field, changeMino, rotatedMino, originY, originX, true);
 						originY = nextOrigin[0];
 						originX = nextOrigin[1];
-						for(int i = 1; i < changeMino.Length; i++)
+						//changeMinoの更新
+						for (int i = 1; i < changeMino.Length; i++)
 						{
 							changeMino[i][0] = rotatedMino[i][0];
 							changeMino[i][1] = rotatedMino[i][1];
 						}
+
 					}
 					DebugArray(field);
 					if(JudgeFallen(field, rotatedMino, originY, originX))
@@ -166,10 +193,13 @@ namespace Tetris
 				}
 				if (flag)
 				{
-					lineNums[index] = 1;
+					lineNums[index] = i;
 					index++;
 					for (int j = 1; j < field.GetLength(1) - 1; j++)
 						field[i, j] = 0;
+					//その行の親オブジェクトの子オブジェクトを全部消す。
+					foreach (Transform childObject in lineObjects[i].transform)
+						Destroy(childObject.gameObject);
 				}
 			}
 			Array.Resize(ref lineNums, index);
@@ -234,7 +264,9 @@ namespace Tetris
 		//消えたラインを埋める
 		public void UpdateField(int[,] field, int[] killNums)
 		{
-			for(int i = 0; i < killNums.Length; i++)
+			for (int i = 0; i < killNums.Length; i++)
+				Debug.Log(killNums[i]);
+			for (int i = 0; i < killNums.Length; i++)
 			{
 				for(int j = killNums[i] - i; j < field.GetLength(0) - 2; j++)
 				{
@@ -242,7 +274,20 @@ namespace Tetris
 					{
 						field[j, k] = field[j + 1, k];
 					}
+					//ミノのオブジェクトを下にずらす
+					//配列入れ替え
+					Debug.Log(j + "," + (j + 1));
+					GameObject temp = lineObjects[j];
+					lineObjects[j] = lineObjects[j + 1];
+					lineObjects[j + 1] = temp;
+					//リネーム
+					lineObjects[j + 1].name = "line" + (j + 1).ToString();
+					lineObjects[j].name = "line" + j.ToString();
+					//座標更新
+					lineObjects[j + 1].transform.position += Vector3.up;
+					lineObjects[j].transform.position += Vector3.down;
 				}
+				DebugArray(field);
 			}
 		}
 		//ミノが落ちきったか判定　true 落ちきった　false　落ちてない
