@@ -24,9 +24,13 @@ namespace Tetris
 		private List<int> minoNums;
 		private GameObject thisMinoObject;//その時操作できるオブジェクトを格納
 		private GameObject[] lineObjects;//行単位で操作するときの親オブジェクトの配列
+		private bool coroutineFlag;//遊び時間実装時のフラグ
+		private bool keyInputFlag;//キー入力があったかどうか
 		// Use this for initialization
 		void Start()
 		{
+			coroutineFlag = true;
+			keyInputFlag = false;
 			player = GetComponent<Player>();
 			minoNums = new List<int> { 0, 1, 2, 3, 4, };
 			int random = UnityEngine.Random.Range(0, minoNums.Count);
@@ -51,23 +55,13 @@ namespace Tetris
 		void Update()
 		{
 
-			nextOrigin = KeyEventReception(field, thisMino, originY, originX);
-			originY = nextOrigin[0];
-			originX = nextOrigin[1];
-
-			if (originX == -1 && originY == -1)
+			int[][] changedMino = KeyEventReception(field, thisMino, originY, originX);
+			if (JudgeFallen(field, changedMino, originY, originX) && coroutineFlag)
 			{
-				//ラインが消えたなら
-				int[] killNums = JudgeKillLine(field);
-				if (killNums.Length >= 1)
-				{
-					UpdateField(field, killNums);
-				}
-				int random = UnityEngine.Random.Range(0, minoNums.Count);
-				Setup(field, minoNums[random]);
-				minoNums.RemoveAt(random);
-				if (minoNums.Count == 0)
-					minoNums = new List<int>{0,1,2,3,4 };
+				coroutineFlag = false;
+				IEnumerator movingCoroutine = MinoFixCoroutine(0.5f);
+				StartCoroutine(movingCoroutine);
+				
 			}
 			
 		}
@@ -85,14 +79,15 @@ namespace Tetris
 			return new int[] { originY, originX };
 		}
 
-		public int[] KeyEventReception(int[,] field,int[][] changeMino,int originY, int originX)
+		public int[][] KeyEventReception(int[,] field,int[][] changeMino,int originY, int originX)
 		{
 			//入力があったら
 			if (player.inputNum > 0)
 			{
+				
 				if (player.inputNum < 5)
 				{
-					int[][] movedMino = tetrisMino.MoveMino(changeMino, player.inputNum,thisMinoObject);
+					int[][] movedMino = tetrisMino.MoveMino(changeMino, player.inputNum, thisMinoObject);
 
 					int[] nextOrigin = UpdateField(field, changeMino, movedMino, originY, originX, false);
 					if (nextOrigin[0] == -1 && nextOrigin[1] == -1)
@@ -104,9 +99,10 @@ namespace Tetris
 					}
 					else
 					{
+						keyInputFlag = true;
 						nextOrigin = UpdateField(field, changeMino, movedMino, originY, originX, true);
-						originY = nextOrigin[0];
-						originX = nextOrigin[1];
+						this.originY = nextOrigin[0];
+						this.originX = nextOrigin[1];
 						//実際のミノの移動
 						switch (player.inputNum)
 						{
@@ -122,42 +118,41 @@ namespace Tetris
 						}
 					}
 					DebugArray(field);
-					if (JudgeFallen(field, movedMino, originY, originX))
-					{
-						//ミノの親オブジェクトを削除
-						//子オブジェクトを配列に格納
-						//行ごとの親オブジェクトにいれる。
-						GameObject[] childObjects = new GameObject[thisMinoObject.transform.childCount];
-						for(int i = 0;i < thisMinoObject.transform.childCount;i++)
-							childObjects[i] = thisMinoObject.transform.GetChild(i).gameObject;
-						thisMinoObject.transform.DetachChildren();
-						Destroy(thisMinoObject);
-						foreach(GameObject childObject in childObjects)
-						{
-							childObject.transform.parent = lineObjects[(int)Math.Round(childObject.transform.position.y)].transform;
-						}
 
-						return new int[] { -1, -1 };
-					}
-					else
-						return new int[] { originY, originX };
+					return movedMino;
 
 				}
 				else
 				{
-					rotatedTimes++;
-					int[][] rotatedMino = tetrisMino.RotateMino(rotatedTimes, thisMinoObject);
+					int[][] rotatedMino;
+					if (player.inputNum == 5)
+					{
+						rotatedTimes++;
+						rotatedMino = tetrisMino.RotateMino(rotatedTimes, thisMinoObject,1,field,changeMino,originY,originX);
+					}
+					else
+					//if(player.inputNum == 6)だったら
+					{
+						rotatedTimes--;
+						rotatedMino = tetrisMino.RotateMino(rotatedTimes, thisMinoObject, -1, field, changeMino, originY, originX);
+
+					}
+
 					int[] nextOrigin = UpdateField(field, changeMino, rotatedMino, originY, originX, false);
 					if (nextOrigin[0] == -1 && nextOrigin[1] == -1)
-					{
+					{ 
 						Debug.Log("そこには動かせません");
-						rotatedMino = tetrisMino.RotateMino(rotatedTimes - 1,thisMinoObject);
+						if (player.inputNum == 5)
+							rotatedMino = tetrisMino.RotateMino(--rotatedTimes, thisMinoObject);
+						else if (player.inputNum == 6)
+							rotatedMino = tetrisMino.RotateMino(++rotatedTimes, thisMinoObject);
 					}
 					else
 					{
+						keyInputFlag = true;
 						nextOrigin = UpdateField(field, changeMino, rotatedMino, originY, originX, true);
-						originY = nextOrigin[0];
-						originX = nextOrigin[1];
+						this.originY = nextOrigin[0];
+						this.originX = nextOrigin[1];
 						//changeMinoの更新
 						for (int i = 1; i < changeMino.Length; i++)
 						{
@@ -167,13 +162,11 @@ namespace Tetris
 
 					}
 					DebugArray(field);
-					if(JudgeFallen(field, rotatedMino, originY, originX))
-						return new int[] { -1, -1 };
-					else
-						return new int[] { originY, originX };
+					return rotatedMino;
 				}
 			}
-			return new int[] { originY, originX };
+			
+			return changeMino;
 		}
 
 
@@ -313,6 +306,47 @@ namespace Tetris
 				}
 			}
 			return flag;
+		}
+
+		//ミノが固定されるまで遊び時間の実装
+		IEnumerator MinoFixCoroutine(float waitTimes)
+		{
+			while (keyInputFlag)
+			{
+				keyInputFlag = false;
+				yield return new WaitForSeconds(waitTimes);
+			}
+			if (JudgeFallen(field, thisMino, originY, originX))
+				MinoFixProcess();
+			else
+				coroutineFlag = true;
+		}
+
+		//ミノを固定する関数
+		public void MinoFixProcess()
+		{
+			coroutineFlag = true;
+			//ミノの親オブジェクトを削除
+			//子オブジェクトを配列に格納
+			//行ごとの親オブジェクトにいれる。
+			GameObject[] childObjects = new GameObject[thisMinoObject.transform.childCount];
+			for (int i = 0; i < thisMinoObject.transform.childCount; i++)
+				childObjects[i] = thisMinoObject.transform.GetChild(i).gameObject;
+			thisMinoObject.transform.DetachChildren();
+			Destroy(thisMinoObject);
+			foreach (GameObject childObject in childObjects)
+				childObject.transform.parent = lineObjects[(int)Math.Round(childObject.transform.position.y)].transform;
+			//ラインが消えたなら
+			int[] killNums = JudgeKillLine(field);
+			if (killNums.Length >= 1)
+			{
+				UpdateField(field, killNums);
+			}
+			int random = UnityEngine.Random.Range(0, minoNums.Count);
+			Setup(field, minoNums[random]);
+			minoNums.RemoveAt(random);
+			if (minoNums.Count == 0)
+				minoNums = new List<int> { 0, 1, 2, 3, 4 };
 		}
 		//フィールド初期化関数
 		public void InitField(int[,] field, int height, int width)

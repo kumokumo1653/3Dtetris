@@ -57,6 +57,99 @@ namespace Tetris
 
 
 		//roteteNum回、回転したブロックの配列を返す。
+		//rotatederection　-1で右回転　1で左回転
+		public int[][] RotateMino(int rotateNum, GameObject thisMinoObject, int ratatedirection,int[,] field,int[][] thisMino,int originY,int originX)
+		{
+			int[][] rotatedMino = new int[][]
+			{
+				new int[]{Blocks[type][0][0]},
+				new int[]{0,0},
+				new int[]{0,0},
+				new int[]{0,0},
+				new int[]{0,0}
+			};
+			Field Board = new Field();
+			int[][] offset = new int[5][];
+			
+			//回転回数の正規化
+			int rotationTimes = (Blocks[type][0][0] + (rotateNum % Blocks[type][0][0])) % Blocks[type][0][0];
+			//回転後の状態(右回転基準)
+			int afterRotataionStates = (Blocks[type][0][0] - rotationTimes) % Blocks[type][0][0];
+			//回転前の状態を定義
+			int beforeRotationState = (Blocks[type][0][0] + afterRotataionStates + ratatedirection) % Blocks[type][0][0];
+			Debug.Log(afterRotataionStates + "," + beforeRotationState);
+			//Oミノであったら
+			if (type == 1)
+			{
+				for (int i = 1; i < Blocks[type].Length; i++)
+				{
+					rotatedMino[i][0] = Blocks[type][i][0];
+					rotatedMino[i][1] = Blocks[type][i][1];
+				}
+				thisMinoObject.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+				return rotatedMino;
+			}
+			for (int i = 0; i < offset.GetLength(0); i++)
+			{
+				offset[i] = new int[2];
+				offset[i][0] = MinoOffset[type][beforeRotationState][i][0] - MinoOffset[type][afterRotataionStates][i][0];
+				offset[i][1] = MinoOffset[type][beforeRotationState][i][1] - MinoOffset[type][afterRotataionStates][i][1];
+				Debug.Log(offset[i][0] + "," + offset[i][1]);
+			}
+			//元の形に戻ったら(O型は常にこれ)
+			if (rotationTimes == 0)
+			{
+				for (int i = 1; i < Blocks[type].Length; i++)
+				{
+					rotatedMino[i][0] = Blocks[type][i][0];
+					rotatedMino[i][1] = Blocks[type][i][1];
+				}
+				thisMinoObject.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+				
+			}
+
+				int rotationAngle = rotationTimes * 90;
+			for (int i = 1; i < Blocks[type].Length; i++)
+			{
+				//y方向
+				rotatedMino[i][1] = Blocks[type][i][0] * Sin(rotationAngle) + Blocks[type][i][1] * Cos(rotationAngle);
+				//ｘ方向
+				rotatedMino[i][0] = Blocks[type][i][0] * Cos(rotationAngle) - Blocks[type][i][1] * Sin(rotationAngle);
+				
+			}
+			thisMinoObject.transform.rotation = Quaternion.Euler(new Vector3(0, 0, rotationAngle));
+			//SRSの判定
+			int offsetNum = 0;
+			while (true)
+			{
+				Debug.Log("SRS");
+				//回転ミノの原点更新
+				rotatedMino[rotatedMino.Length - 1][1] = offset[offsetNum][1];
+				rotatedMino[rotatedMino.Length - 1][0] = offset[offsetNum][0];
+				int[] origin = Board.UpdateField(field, thisMino, rotatedMino, originY, originX, false);
+				if (origin[0] == -1 && origin[1] == -1)
+					offsetNum++;
+				else
+				{
+					//移動
+					thisMinoObject.transform.position += new Vector3(offset[offsetNum][0], offset[offsetNum][1], 0);
+					break;
+				}
+				if(offsetNum == offset.Length)
+				{
+					Debug.Log("おけない");
+					//原点の修正
+					rotatedMino[rotatedMino.Length - 1][1] = 0;
+					rotatedMino[rotatedMino.Length - 1][0] = 0;
+					break;
+				}
+					
+			}
+			return rotatedMino;
+		}
+
+		//オーバーロード
+		//回転をもとに戻すよう
 		public int[][] RotateMino(int rotateNum, GameObject thisMinoObject)
 		{
 			int[][] rotatedMino = new int[][]
@@ -68,7 +161,7 @@ namespace Tetris
 				new int[]{0,0}
 			};
 			//回転回数の正規化
-			int rotationTimes = rotateNum % Blocks[type][0][0];
+			int rotationTimes = (Blocks[type][0][0] + (rotateNum % Blocks[type][0][0])) % Blocks[type][0][0];
 			//元の形に戻ったら(O型は常にこれ)
 			if (rotationTimes == 0)
 			{
@@ -81,14 +174,14 @@ namespace Tetris
 				return rotatedMino;
 			}
 
-				int rotationAngle = rotationTimes * 90;
+			int rotationAngle = rotationTimes * 90;
 			for (int i = 1; i < Blocks[type].Length; i++)
 			{
 				//y方向
 				rotatedMino[i][1] = Blocks[type][i][0] * Sin(rotationAngle) + Blocks[type][i][1] * Cos(rotationAngle);
 				//ｘ方向
 				rotatedMino[i][0] = Blocks[type][i][0] * Cos(rotationAngle) - Blocks[type][i][1] * Sin(rotationAngle);
-				
+
 			}
 			thisMinoObject.transform.rotation = Quaternion.Euler(new Vector3(0, 0, rotationAngle));
 			return rotatedMino;

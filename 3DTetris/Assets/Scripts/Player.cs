@@ -29,8 +29,10 @@ namespace Tetris
 					return 1;
 				if (Input.GetKeyDown(KeyCode.S))
 					return 3;
-				if (Input.GetKeyDown(KeyCode.Space))
+				if (Input.GetKeyDown(KeyCode.J))
 					return 5;
+				if (Input.GetKeyDown(KeyCode.L))
+					return 6;
 			}
 			return -1;
 		}
