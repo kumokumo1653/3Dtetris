@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using UnityEngine.UI;
 
 namespace Tetris
 {
@@ -9,7 +10,9 @@ namespace Tetris
 	{
 		//盤面は10×5だたし、11,12段目からミノは出現
 		const int width = 10;
-		const int height = 15;
+		const int height = 20;
+		//NEXTの数
+		const int nextNums = 4;
 		//ミノのプレハブの名前(string)を配列に.Blockクラスの配列と同じ順番にする。
 		public string[] minoPrefabs;
 		[HideInInspector]
@@ -26,17 +29,37 @@ namespace Tetris
 		private GameObject[] lineObjects;//行単位で操作するときの親オブジェクトの配列
 		private bool coroutineFlag;//遊び時間実装時のフラグ
 		private bool keyInputFlag;//キー入力があったかどうか
+		private bool fallenFlag;//落ちきったかどうか
+		private bool finishedFlag;
+		private IEnumerator freeFallCoroutine;//自由落下用のコルーチン
+		private int[] queueMino;
+		private GameObject[] NextMinoObjs;
+		private float speed;
+		//レベルアップインターバル
+		public int lavelUpInterval;
+		public int speedInsterval;
+		//テキスト表示用
+		public int lavel { get; set; }
+		public int score { get; set; }
 		// Use this for initialization
 		void Start()
 		{
 			coroutineFlag = true;
 			keyInputFlag = false;
+			fallenFlag = false;
+			finishedFlag = false;
+			lavel = 1;
+			score = 0;
+			speed = 60;
 			player = GetComponent<Player>();
 			minoNums = new List<int> { 0, 1, 2, 3, 4, };
-			int random = UnityEngine.Random.Range(0, minoNums.Count);
+			queueMino = new int[nextNums];
+			NextMinoObjs = new GameObject[nextNums - 1];
+			for (int i = 0; i < nextNums; i++)
+				queueMino[i] = -1;
+			int random = QueueMino();
 			InitField(field, height + 5, width + 2);
-			nextOrigin = Setup(field, minoNums[random]);
-			minoNums.RemoveAt(random);
+			nextOrigin = Setup(field, random);
 			originY = nextOrigin[0];
 			originX = nextOrigin[1];
 			lineObjects = new GameObject[height+4];
@@ -54,32 +77,52 @@ namespace Tetris
 		// Update is called once per frame
 		void Update()
 		{
-
-			int[][] changedMino = KeyEventReception(field, thisMino, originY, originX);
-			if (JudgeFallen(field, changedMino, originY, originX) && coroutineFlag)
+			if (!finishedFlag)
 			{
-				coroutineFlag = false;
-				IEnumerator movingCoroutine = MinoFixCoroutine(0.5f);
-				StartCoroutine(movingCoroutine);
-				
+				int[][] changedMino = KeyEventReception(field, thisMino);
+				//thisMinoの更新
+				for (int i = 1; i < thisMino.Length; i++)
+				{
+					thisMino[i][0] = changedMino[i][0];
+					thisMino[i][1] = changedMino[i][1];
+				}
+				if (JudgeFallen(field, changedMino) && coroutineFlag && fallenFlag)
+				{
+					fallenFlag = false;
+					coroutineFlag = false;
+					IEnumerator movingCoroutine = MinoFixCoroutine(0.5f);
+					StartCoroutine(movingCoroutine);
+
+				}
 			}
-			
+			else
+			{
+				StopCoroutine(freeFallCoroutine);
+				Debug.Log("GAMEOVER");
+			}
 		}
 
 		public int[] Setup(int [,] field ,int type)
 		{
+			fallenFlag = true;
+			
 			tetrisMino = new TetrisMino(type, height, width);
 			thisMino = tetrisMino.GenerateMino(field);
 			DebugArray(field);
 			originY = height + 1;
 			originX = width / 2;
 			rotatedTimes = 0;
+			
 			thisMinoObject = (GameObject)Resources.Load(minoPrefabs[type]);
 			thisMinoObject = Instantiate(thisMinoObject, new Vector3(originX, originY, 0.0f), Quaternion.identity);
+			Debug.Log(this.originY + "," + this.originX);
+			//自由落下用のコルーチン
+			freeFallCoroutine = Freefall(speed, field, thisMino);
+			StartCoroutine(freeFallCoroutine);
 			return new int[] { originY, originX };
 		}
 
-		public int[][] KeyEventReception(int[,] field,int[][] changeMino,int originY, int originX)
+		public int[][] KeyEventReception(int[,] field,int[][] changeMino)
 		{
 			//入力があったら
 			if (player.inputNum > 0)
@@ -87,58 +130,87 @@ namespace Tetris
 				
 				if (player.inputNum < 5)
 				{
-					int[][] movedMino = tetrisMino.MoveMino(changeMino, player.inputNum, thisMinoObject);
-
-					int[] nextOrigin = UpdateField(field, changeMino, movedMino, originY, originX, false);
-					if (nextOrigin[0] == -1 && nextOrigin[1] == -1)
+					if (player.inputNum == 4)
 					{
-						Debug.Log("そこには動かせません");
-						movedMino[movedMino.Length - 1][0] = 0;
-						movedMino[movedMino.Length - 1][1] = 0;
-
+						//ハードドロップ
+						int[][] movedMino;
+						while (true) {
+							
+							movedMino = tetrisMino.MoveMino(changeMino, 3);
+							int[] nextOrigin = UpdateField(field, changeMino, movedMino, false);
+							if (nextOrigin[0] == -1 && nextOrigin[1] == -1)
+							{
+								Debug.Log("そこには動かせません");
+								movedMino[movedMino.Length - 1][0] = 0;
+								movedMino[movedMino.Length - 1][1] = 0;
+								break;
+							}
+							else
+							{
+								keyInputFlag = true;
+								nextOrigin = UpdateField(field, changeMino, movedMino, true);
+								this.originY = nextOrigin[0];
+								this.originX = nextOrigin[1];
+								//実際のミノの移動
+								thisMinoObject.transform.position += Vector3.down;
+							}
+						}
 					}
 					else
 					{
-						keyInputFlag = true;
-						nextOrigin = UpdateField(field, changeMino, movedMino, originY, originX, true);
-						this.originY = nextOrigin[0];
-						this.originX = nextOrigin[1];
-						//実際のミノの移動
-						switch (player.inputNum)
+						int[][] movedMino = tetrisMino.MoveMino(changeMino, player.inputNum);
+
+						int[] nextOrigin = UpdateField(field, changeMino, movedMino, false);
+						if (nextOrigin[0] == -1 && nextOrigin[1] == -1)
 						{
-							case 1:
-								thisMinoObject.transform.position += Vector3.right;
-								break;
-							case 2:
-								thisMinoObject.transform.position += Vector3.left;
-								break;
-							case 3:
-								thisMinoObject.transform.position += Vector3.down;
-								break;
+							Debug.Log("そこには動かせません");
+							movedMino[movedMino.Length - 1][0] = 0;
+							movedMino[movedMino.Length - 1][1] = 0;
+
 						}
+						else
+						{
+							keyInputFlag = true;
+							nextOrigin = UpdateField(field, changeMino, movedMino, true);
+							this.originY = nextOrigin[0];
+							this.originX = nextOrigin[1];
+							//実際のミノの移動
+							switch (player.inputNum)
+							{
+								case 1:
+									thisMinoObject.transform.position += Vector3.right;
+									break;
+								case 2:
+									thisMinoObject.transform.position += Vector3.left;
+									break;
+								case 3:
+									thisMinoObject.transform.position += Vector3.down;
+									break;
+							}
+						}
+						DebugArray(field);
+
+						return movedMino;
 					}
-					DebugArray(field);
-
-					return movedMino;
-
 				}
 				else
 				{
 					int[][] rotatedMino;
+					Debug.Log(originX + "," + originY);
 					if (player.inputNum == 5)
 					{
 						rotatedTimes++;
-						rotatedMino = tetrisMino.RotateMino(rotatedTimes, thisMinoObject,1,field,changeMino,originY,originX);
+						rotatedMino = tetrisMino.RotateMino(rotatedTimes, thisMinoObject,1,field,changeMino);
 					}
 					else
 					//if(player.inputNum == 6)だったら
 					{
 						rotatedTimes--;
-						rotatedMino = tetrisMino.RotateMino(rotatedTimes, thisMinoObject, -1, field, changeMino, originY, originX);
+						rotatedMino = tetrisMino.RotateMino(rotatedTimes, thisMinoObject, -1, field, changeMino);
 
 					}
-
-					int[] nextOrigin = UpdateField(field, changeMino, rotatedMino, originY, originX, false);
+					
+					int[] nextOrigin = UpdateField(field, changeMino, rotatedMino, false);
 					if (nextOrigin[0] == -1 && nextOrigin[1] == -1)
 					{ 
 						Debug.Log("そこには動かせません");
@@ -150,7 +222,7 @@ namespace Tetris
 					else
 					{
 						keyInputFlag = true;
-						nextOrigin = UpdateField(field, changeMino, rotatedMino, originY, originX, true);
+						nextOrigin = UpdateField(field, changeMino, rotatedMino, true);
 						this.originY = nextOrigin[0];
 						this.originX = nextOrigin[1];
 						//changeMinoの更新
@@ -193,6 +265,14 @@ namespace Tetris
 					//その行の親オブジェクトの子オブジェクトを全部消す。
 					foreach (Transform childObject in lineObjects[i].transform)
 						Destroy(childObject.gameObject);
+					//score兼lavelChange
+					score += 1;
+					if (score % lavelUpInterval == 0)
+					{
+						Debug.Log("レベルアップ");
+						lavel++;
+						speed -= speedInsterval;
+					}
 				}
 			}
 			Array.Resize(ref lineNums, index);
@@ -201,7 +281,7 @@ namespace Tetris
 
 		//回転や移動のときミノの更新.新たな原点を返す。(y,x).実際にそこにおけるかも判定
 		//flagがtrueで実際に置くfalseで実際には置かない.置けなければ、負の配列を返す。おければ新しい原点を返す。
-		public int[] UpdateField(int[,] field, int[][] beforeMino, int[][] afterMino, int originY, int originX, bool flag)
+		public int[] UpdateField(int[,] field, int[][] beforeMino, int[][] afterMino, bool flag)
 		{
 			if (flag)
 			{
@@ -210,8 +290,8 @@ namespace Tetris
 					field[originY + beforeMino[i][1], originX + beforeMino[i][0]] = 0;
 				//更新
 				//原点の更新
-				originY += afterMino[afterMino.Length - 1][1];
-				originX += afterMino[afterMino.Length - 1][0];
+				this.originY += afterMino[afterMino.Length - 1][1];
+				this.originX += afterMino[afterMino.Length - 1][0];
 				field[originY, originX] = 1;
 				for (int i = 1; i < afterMino.Length - 1; i++)
 					field[originY + afterMino[i][1], originX + afterMino[i][0]] = 1;
@@ -222,6 +302,10 @@ namespace Tetris
 			}
 			else
 			{
+				for (int i = 1; i < beforeMino.Length; i++)
+					Debug.LogWarning(beforeMino[i][0] + "," + beforeMino[i][1]);
+				for (int i = 1; i < afterMino.Length; i++)
+					Debug.LogWarning(afterMino[i][0] + "," + afterMino[i][1]);
 				//盤面をコピー
 				int[,] copy = new int[field.GetLength(0), field.GetLength(1)];
 				for (int i = 0; i < copy.GetLength(0); i++)
@@ -233,21 +317,31 @@ namespace Tetris
 				}
 				//削除
 				for (int i = 1; i < beforeMino.Length; i++)
+				{
+					Debug.Log(originY + "+" + beforeMino[i][1] + "," + originX + "+" + beforeMino[i][0]);
 					copy[originY + beforeMino[i][1], originX + beforeMino[i][0]] = 0;
+				}
 				//更新
 				//原点の更新
-				originY += afterMino[afterMino.Length - 1][1];
-				originX += afterMino[afterMino.Length - 1][0];
-				if (copy[originY, originX] == 1)
+				int copyOriginY =originY + afterMino[afterMino.Length - 1][1];
+				int copyOriginX = originX + afterMino[afterMino.Length - 1][0];
+
+				if (copy[copyOriginY, copyOriginX] == 1)
+				{
+					Debug.Log(copyOriginY + "," + copyOriginX);
 					return new int[] { -1, -1 };
-				copy[originY, originX] = 1;
+				}
+				copy[copyOriginY, copyOriginX] = 1;
 				for (int i = 1; i < afterMino.Length - 1; i++)
 				{
-					if (copy[originY + afterMino[i][1], originX + afterMino[i][0]] == 1)
+					if (copy[copyOriginY + afterMino[i][1], copyOriginX + afterMino[i][0]] == 1)
+					{
+						Debug.Log((copyOriginY + afterMino[i][1]) + "," + (copyOriginX + afterMino[i][0]));
 						return new int[] { -1, -1 };
-					copy[originY + afterMino[i][1], originX + afterMino[i][0]] = 1;
+					}
+					copy[copyOriginY + afterMino[i][1], copyOriginX + afterMino[i][0]] = 1;
 				}
-				int[] nextOrigin = new int[] { originY, originX };
+				int[] nextOrigin = new int[] { copyOriginY, copyOriginX };
 				return nextOrigin;
 
 			}
@@ -283,8 +377,20 @@ namespace Tetris
 				DebugArray(field);
 			}
 		}
+		//ゲームオーバーかどうか 終わり　true  続行 false
+		public bool JudgeGameOver(int[,] field,int[][] mino)
+		{
+			int originY = height + 1;
+			int originX = width / 2;
+			for (int i = 1; i < mino.Length; i++)
+			{
+				if (field[originY + mino[i][1], originX + mino[i][0]] == 1)
+					return true;
+			}
+			return false;
+		}
 		//ミノが落ちきったか判定　true 落ちきった　false　落ちてない
-		public bool JudgeFallen(int[,]field ,int[][] mino,int originY,int originX)
+		public bool JudgeFallen(int[,]field ,int[][] mino)
 		{
 			bool flag = false;
 			for(int i = 1; i < mino.Length; i++)
@@ -307,6 +413,91 @@ namespace Tetris
 			}
 			return flag;
 		}
+		//自由落下
+		//speed Gの逆数で指定
+		IEnumerator Freefall(float speed, int[,] field, int[][] thisMino)
+		{
+			while (true)
+			{
+				for (int i = 0; i < speed; i++)
+					yield return null;
+				//下の移動
+				int[][] movedMino = tetrisMino.MoveMino(thisMino, 3);
+				//////
+				for(int i = 1;i < thisMino.Length; i++)
+				{
+					Debug.Log(thisMino[i][0] + "," + thisMino[i][1]);
+					Debug.Log(movedMino[i][0] + "," + movedMino[i][1]);
+
+				}
+				/////
+				int[] nextOrigin = UpdateField(field, thisMino, movedMino, false);
+				if (nextOrigin[0] == -1 && nextOrigin[1] == -1)
+				{
+					Debug.Log("そこには動かせません");
+					movedMino[movedMino.Length - 1][0] = 0;
+					movedMino[movedMino.Length - 1][1] = 0;
+
+				}
+				else
+				{
+					keyInputFlag = true;
+					nextOrigin = UpdateField(field, thisMino, movedMino, true);
+					this.originY = nextOrigin[0];
+					this.originX = nextOrigin[1];
+					//実際のミノの移動
+					thisMinoObject.transform.position += Vector3.down;
+				}
+				DebugArray(field);
+				Debug.Log(this.originY + "," + this.originX);
+
+				//thisMinoの更新
+				for (int i = 1; i < thisMino.Length; i++)
+				{
+					this.thisMino[i][0] = movedMino[i][0];
+					this.thisMino[i][1] = movedMino[i][1];
+				}
+				//落ちきったら
+				if (JudgeFallen(field, movedMino) && coroutineFlag && fallenFlag)
+				{
+					fallenFlag = false;
+					coroutineFlag = false;
+					IEnumerator movingCoroutine = MinoFixCoroutine(0.5f);
+					StartCoroutine(movingCoroutine);
+
+				}
+			}
+		}
+
+		//キュー作成。サイズは可変。エンキューは原作準拠の順に、関数呼び出しでデキュー
+		public int QueueMino()
+		{
+			for (int i = 0; i < nextNums; i++)
+			{
+				if (queueMino[i] == -1)
+				{
+					int random = UnityEngine.Random.Range(0, minoNums.Count);
+					queueMino[i] = minoNums[random];
+					minoNums.RemoveAt(random);
+					if (minoNums.Count == 0)
+						minoNums = new List<int> { 0, 1, 2, 3, 4 };
+					
+				}
+			}
+			int returnNum = queueMino[0];
+			for(int i = 0; i < nextNums - 1; i++)
+				queueMino[i] = queueMino[i + 1];
+			queueMino[nextNums - 1] = -1;
+			//表示
+			
+			for(int i = 0; i < nextNums - 1; i++)
+			{
+				Destroy(NextMinoObjs[i]);
+				NextMinoObjs[i] = (GameObject)Resources.Load(minoPrefabs[queueMino[i]]);
+				NextMinoObjs[i] = Instantiate(NextMinoObjs[i], new Vector3(16, 14 - 4*i, 0.0f), Quaternion.identity);
+			}
+			return returnNum;
+		}
 
 		//ミノが固定されるまで遊び時間の実装
 		IEnumerator MinoFixCoroutine(float waitTimes)
@@ -316,7 +507,7 @@ namespace Tetris
 				keyInputFlag = false;
 				yield return new WaitForSeconds(waitTimes);
 			}
-			if (JudgeFallen(field, thisMino, originY, originX))
+			if (JudgeFallen(field, thisMino) && !keyInputFlag)
 				MinoFixProcess();
 			else
 				coroutineFlag = true;
@@ -342,11 +533,12 @@ namespace Tetris
 			{
 				UpdateField(field, killNums);
 			}
-			int random = UnityEngine.Random.Range(0, minoNums.Count);
-			Setup(field, minoNums[random]);
-			minoNums.RemoveAt(random);
-			if (minoNums.Count == 0)
-				minoNums = new List<int> { 0, 1, 2, 3, 4 };
+			//自由落下コルーチンの停止
+			StopCoroutine(freeFallCoroutine);
+			int random = QueueMino();
+			//ゲームオーバー判定
+			finishedFlag = JudgeGameOver(field, tetrisMino.Blocks[random]);
+			Setup(field, random);
 		}
 		//フィールド初期化関数
 		public void InitField(int[,] field, int height, int width)

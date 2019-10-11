@@ -10,9 +10,12 @@ namespace Tetris
 		private int height;
 		private int width;
 		private int type;
+		private GameObject gameManager;
+		private Field Board;
 		public TetrisMino(int type,int height, int width)
 		{
-			
+			gameManager = GameObject.Find("GameManager");
+			Board = gameManager.GetComponent<Field>();
 			this.height = height;
 			this.width = width;
 			this.type = type;
@@ -58,7 +61,7 @@ namespace Tetris
 
 		//roteteNum回、回転したブロックの配列を返す。
 		//rotatederection　-1で右回転　1で左回転
-		public int[][] RotateMino(int rotateNum, GameObject thisMinoObject, int ratatedirection,int[,] field,int[][] thisMino,int originY,int originX)
+		public int[][] RotateMino(int rotateNum, GameObject thisMinoObject, int ratatedirection,int[,] field,int[][] thisMino)
 		{
 			int[][] rotatedMino = new int[][]
 			{
@@ -68,7 +71,7 @@ namespace Tetris
 				new int[]{0,0},
 				new int[]{0,0}
 			};
-			Field Board = new Field();
+			
 			int[][] offset = new int[5][];
 			
 			//回転回数の正規化
@@ -126,7 +129,7 @@ namespace Tetris
 				//回転ミノの原点更新
 				rotatedMino[rotatedMino.Length - 1][1] = offset[offsetNum][1];
 				rotatedMino[rotatedMino.Length - 1][0] = offset[offsetNum][0];
-				int[] origin = Board.UpdateField(field, thisMino, rotatedMino, originY, originX, false);
+				int[] origin = Board.UpdateField(field, thisMino, rotatedMino, false);
 				if (origin[0] == -1 && origin[1] == -1)
 					offsetNum++;
 				else
@@ -191,7 +194,7 @@ namespace Tetris
 		//1…右
 		//2…左
 		//3…下
-		public int[][] MoveMino(int[][] mino, int moveDirection,GameObject thisMinoObject)
+		public int[][] MoveMino(int[][] mino, int moveDirection)
 		{
 			int[][] movedMino = new int[][]
 			{
