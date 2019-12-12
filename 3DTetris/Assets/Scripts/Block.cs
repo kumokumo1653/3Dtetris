@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Tetris
 {
-	
+
 	public class Block : MonoBehaviour
 	{
 		const int type = 7;
@@ -59,9 +59,27 @@ namespace Tetris
 					new int[]{-1,0},
 					new int[]{0,1},
 					new int[]{0,0}
+				},
+				//J型　
+				new int[][]
+				{
+					new int[]{4},
+					new int[]{1,0},
+					new int[]{-1,0},
+					new int[]{-1,1},
+					new int[]{0,0}
+				},
+				//Z型
+				new int[][]{
+					new int[]{4},
+					new int[]{1,0},
+					new int[]{0,1},
+					new int[]{-1,1},
+					new int[]{0,0}
 				}
+				
 			};
-			MinoOffset = new int[][][][]
+		MinoOffset = new int[][][][]
 			{
 				//Iミノ
 				new int[][][]
@@ -69,38 +87,38 @@ namespace Tetris
 					//0
 					new int[][]
 					{
-						new int []{0,0},
-						new int []{-1,0},
-						new int []{2,0},
-						new int []{-1,0},
-						new int []{2,0},
+						new int[]{0,0},
+						new int[]{-1,0},
+						new int[]{2,0},
+						new int[]{-1,0},
+						new int[]{2,0},
 					},
 					//R
 					new int[][]
 					{
-						new int []{-1,0},
-						new int []{0,0},
-						new int []{0,0},
-						new int []{0,1},
-						new int []{0,-2},
+						new int[]{-1,0},
+						new int[]{0,0},
+						new int[]{0,0},
+						new int[]{0,1},
+						new int[]{0,-2},
 					},
 					//2
 					new int[][]
 					{
-						new int []{-1,1},
-						new int []{1,1},
-						new int []{2,1},
-						new int []{1,0},
-						new int []{-2,0},
+						new int[]{-1,1},
+						new int[]{1,1},
+						new int[]{2,1},
+						new int[]{1,0},
+						new int[]{-2,0},
 					},
 					//L
 					new int[][]
 					{
-						new int []{0,1},
-						new int []{0,1},
-						new int []{1,0},
-						new int []{0,-1},
-						new int []{0,2},
+						new int[]{0,1},
+						new int[]{0,1},
+						new int[]{1,0},
+						new int[]{0,-1},
+						new int[]{0,2},
 					}
 				},
 				//Oミノ
@@ -133,38 +151,38 @@ namespace Tetris
 					//0
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0}
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0}
 					},
 					//R
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ 1,0},
-						new int []{ 1,-1},
-						new int []{ 0,2},
-						new int []{ 1,2}
+						new int[]{ 0,0},
+						new int[]{ 1,0},
+						new int[]{ 1,-1},
+						new int[]{ 0,2},
+						new int[]{ 1,2}
 					},
 					//2
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0}
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0}
 					},
 					//L
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ -1,0},
-						new int []{ -1,-1},
-						new int []{ 0,2},
-						new int []{ -1,2}
+						new int[]{ 0,0},
+						new int[]{ -1,0},
+						new int[]{ -1,-1},
+						new int[]{ 0,2},
+						new int[]{ -1,2}
 					},
 				},
 				//Lミノ
@@ -173,38 +191,38 @@ namespace Tetris
 					//0
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0}
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0}
 					},
 					//R
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ 1,0},
-						new int []{ 1,-1},
-						new int []{ 0,2},
-						new int []{ 1,2}
+						new int[]{ 0,0},
+						new int[]{ 1,0},
+						new int[]{ 1,-1},
+						new int[]{ 0,2},
+						new int[]{ 1,2}
 					},
 					//2
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0}
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0}
 					},
 					//L
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ -1,0},
-						new int []{ -1,-1},
-						new int []{ 0,2},
-						new int []{ -1,2}
+						new int[]{ 0,0},
+						new int[]{ -1,0},
+						new int[]{ -1,-1},
+						new int[]{ 0,2},
+						new int[]{ -1,2}
 					},
 				},
 				//Tミノ
@@ -213,38 +231,118 @@ namespace Tetris
 					//0
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0}
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0}
 					},
 					//R
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ 1,0},
-						new int []{ 1,-1},
-						new int []{ 0,2},
-						new int []{ 1,2}
+						new int[]{ 0,0},
+						new int[]{ 1,0},
+						new int[]{ 1,-1},
+						new int[]{ 0,2},
+						new int[]{ 1,2}
 					},
 					//2
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0},
-						new int []{ 0,0}
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0}
 					},
 					//L
 					new int[][]
 					{
-						new int []{ 0,0},
-						new int []{ -1,0},
-						new int []{ -1,-1},
-						new int []{ 0,2},
-						new int []{ -1,2}
+						new int[]{ 0,0},
+						new int[]{ -1,0},
+						new int[]{ -1,-1},
+						new int[]{ 0,2},
+						new int[]{ -1,2}
+					},
+				},
+				//Jミノ
+				new int[][][]
+				{
+					//0
+					new int[][]
+					{
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0}
+					},
+					//R
+					new int[][]
+					{
+						new int[]{ 0,0},
+						new int[]{ 1,0},
+						new int[]{ 1,-1},
+						new int[]{ 0,2},
+						new int[]{ 1,2}
+					},
+					//2
+					new int[][]
+					{
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0}
+					},
+					//L
+					new int[][]
+					{
+						new int[]{ 0,0},
+						new int[]{ -1,0},
+						new int[]{ -1,-1},
+						new int[]{ 0,2},
+						new int[]{ -1,2}
+					},
+				},
+				//Zミノ
+				new int[][][]
+				{
+					//0
+					new int[][]
+					{
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0}
+					},
+					//R
+					new int[][]
+					{
+						new int[]{ 0,0},
+						new int[]{ 1,0},
+						new int[]{ 1,-1},
+						new int[]{ 0,2},
+						new int[]{ 1,2}
+					},
+					//2
+					new int[][]
+					{
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0},
+						new int[]{ 0,0}
+					},
+					//L
+					new int[][]
+					{
+						new int[]{ 0,0},
+						new int[]{ -1,0},
+						new int[]{ -1,-1},
+						new int[]{ 0,2},
+						new int[]{ -1,2}
 					},
 				}
 			};
@@ -252,14 +350,14 @@ namespace Tetris
 		
 		// Use this for initialization
 		void Start()
-		{
+{
 
-		}
+}
 
-		// Update is called once per frame
-		void Update()
-		{
+// Update is called once per frame
+void Update()
+{
 
-		}
+}
 	}
 }

@@ -46,7 +46,7 @@ namespace Tetris
 				}
 				else if (Input.GetKey(KeyCode.S) || Input.GetButton("Down"))
 				{
-					Debug.Log("でけた");
+					
 					return WaitKey(3);
 				}
 				else if( Input.GetKey(KeyCode.W) || Input.GetButton("Up"))

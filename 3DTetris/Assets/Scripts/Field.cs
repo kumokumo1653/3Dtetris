@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 namespace Tetris
 {
@@ -41,18 +42,27 @@ namespace Tetris
 		//テキスト表示用
 		public int lavel { get; set; }
 		public int score { get; set; }
+		//ゲームオーバー処理
+		public GameObject gameOverPanel;
+		public GameObject sceneManager;
 		// Use this for initialization
 		void Start()
 		{
+			//Scene遷移元保存
+			SceneData.Instance.referer = SceneManager.GetActiveScene().name;
+			//Scene遷移で壊れないようにする。
+			DontDestroyOnLoad(this);
 			coroutineFlag = true;
 			keyInputFlag = false;
 			fallenFlag = false;
 			finishedFlag = false;
+			gameOverPanel.SetActive(false);
+			sceneManager.SetActive(false);
 			lavel = 1;
 			score = 0;
 			speed = 60;
 			player = GetComponent<Player>();
-			minoNums = new List<int> { 0, 1, 2, 3, 4, };
+			minoNums = new List<int> { 0, 1, 2, 3, 4, 5, 6 };
 			queueMino = new int[nextNums];
 			NextMinoObjs = new GameObject[nextNums - 1];
 			for (int i = 0; i < nextNums; i++)
@@ -97,8 +107,14 @@ namespace Tetris
 			}
 			else
 			{
-				StopCoroutine(freeFallCoroutine);
 				Debug.Log("GAMEOVER");
+				//Scene遷移でエラー出ないように
+				if (SceneManager.GetActiveScene().name == "MainStage")
+				{
+					StopCoroutine(freeFallCoroutine);
+					gameOverPanel.SetActive(true);
+					sceneManager.SetActive(true);
+				}
 			}
 		}
 
@@ -325,7 +341,11 @@ namespace Tetris
 				//原点の更新
 				int copyOriginY =originY + afterMino[afterMino.Length - 1][1];
 				int copyOriginX = originX + afterMino[afterMino.Length - 1][0];
-
+				if(copyOriginX < 0 || copyOriginY < 0)
+				{
+					Debug.Log(copyOriginY + "," + copyOriginX);
+					return new int[] { -1, -1 };
+				}
 				if (copy[copyOriginY, copyOriginX] == 1)
 				{
 					Debug.Log(copyOriginY + "," + copyOriginX);
@@ -392,6 +412,10 @@ namespace Tetris
 		//ミノが落ちきったか判定　true 落ちきった　false　落ちてない
 		public bool JudgeFallen(int[,]field ,int[][] mino)
 		{
+
+			//Debug
+			for (int i = 1; i < mino.Length; i++)
+				Debug.Log(mino[i][0] + "+" + originX + "," + mino[i][1] + "+" + originY);
 			bool flag = false;
 			for(int i = 1; i < mino.Length; i++)
 			{
@@ -408,9 +432,13 @@ namespace Tetris
 						
 					}
 					if (flag)
+					{
+						Debug.Log(flag);
 						return true;
+					}
 				}
 			}
+			Debug.Log(flag);
 			return flag;
 		}
 		//自由落下
@@ -458,6 +486,7 @@ namespace Tetris
 					this.thisMino[i][1] = movedMino[i][1];
 				}
 				//落ちきったら
+				Debug.Log(coroutineFlag + "," + fallenFlag);
 				if (JudgeFallen(field, movedMino) && coroutineFlag && fallenFlag)
 				{
 					fallenFlag = false;
@@ -480,7 +509,7 @@ namespace Tetris
 					queueMino[i] = minoNums[random];
 					minoNums.RemoveAt(random);
 					if (minoNums.Count == 0)
-						minoNums = new List<int> { 0, 1, 2, 3, 4 };
+						minoNums = new List<int> { 0, 1, 2, 3, 4, 5 ,6 };
 					
 				}
 			}
